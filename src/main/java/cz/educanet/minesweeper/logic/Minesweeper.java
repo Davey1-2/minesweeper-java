@@ -1,14 +1,36 @@
 package cz.educanet.minesweeper.logic;
 
+import java.util.Random;
+
 public class Minesweeper {
 
-    private int rowsCount;
-    private int columnsCount;
+    private final int rowsCount;
+    private final int columnsCount;
+    private final Save[][] field;
+    private int place;
+    private boolean click;
+    private final int bombCount;
+    private int flags;
+
 
     public Minesweeper(int rows, int columns) {
+        field = new Save[columns][rows];
         this.rowsCount = rows;
         this.columnsCount = columns;
+
+        bombCount = 15; // CHANGE BOMBS IN FIELD
+
+        for (int i = 0; i < columns; i++) {
+            for (int j = 0; j < rows; j++) {
+                field[i][j] = new Save();
+            }
+        }
+
+        createBombsField(rows, columns);
+        place = (rows * columns) - bombCount;
+        flags = bombCount;
     }
+
 
     /**
      * 0 - Hidden
@@ -21,7 +43,7 @@ public class Minesweeper {
      * @return field type
      */
     public int getField(int x, int y) {
-        return 0;
+        return field[x][y].getState();
     }
 
     /**
@@ -35,6 +57,13 @@ public class Minesweeper {
      * @param y Y
      */
     public void toggleFieldState(int x, int y) {
+        if (field[x][y].getState() == 2){
+            field[x][y].setState(0);
+        }
+        else {
+            field[x][y].setState(2);
+            flags--;
+        }
     }
 
     /**
@@ -44,6 +73,48 @@ public class Minesweeper {
      * @param y Y
      */
     public void reveal(int x, int y) {
+        if (field[x][y].getBomb()) {
+            click = true;
+        }
+        ifReveal(x, y);
+        place--;
+    }
+
+    private void ifReveal(int x, int y) {
+        field[x][y].setState(1);
+
+        if (getAdjacentBombCount(x, y) == 0) {
+
+            boolean leftTopCorner = (x != 0) && y != 0;
+            boolean rightTopCorner = (x != (columnsCount - 1)) && (y != 0);
+            boolean leftBottomCorner = (x != 0) && (y != (rowsCount - 1));
+            boolean rightBottomCorner = (x != (columnsCount - 1)) && (y != (rowsCount - 1));
+
+            //RIGHT
+            if ((rightTopCorner || rightBottomCorner) && !field[x + 1][y].getBomb() && field[x + 1][y].getState() != 1) {
+                place--;
+                ifReveal(x + 1, y);
+            }
+
+            //LEFT
+            if ((leftBottomCorner || leftTopCorner) && !field[x - 1][y].getBomb() && field[x - 1][y].getState() != 1){
+                place--;
+                ifReveal(x - 1, y);
+            }
+
+            //TOP
+            if ((leftTopCorner || rightTopCorner) && !field[x][y - 1].getBomb() && field[x][y - 1].getState() != 1){
+                place--;
+                ifReveal(x, y - 1);
+            }
+
+            //BOTTOM
+            if ((rightBottomCorner || leftBottomCorner) && !field[x][y + 1].getBomb() && field[x][y + 1].getState() != 1){
+                place--;
+                ifReveal(x, y + 1);
+            }
+
+        }
     }
 
     /**
@@ -54,18 +125,78 @@ public class Minesweeper {
      * @return number of adjacent bombs
      */
     public int getAdjacentBombCount(int x, int y) {
-        return 0;
+        int placesToBomb = 0;
+
+        boolean leftTopCorner = (x != 0) && (y != 0);
+        boolean rightTopCorner = (x != columnsCount - 1) && (y != 0);
+        boolean leftBottomCorner = (x != 0) && (y != rowsCount - 1);
+        boolean rightBottomCorner = (x != columnsCount - 1) && (y != rowsCount - 1);
+
+
+        //RIGHT
+        if ((rightTopCorner || rightBottomCorner) && field[x + 1][y].getBomb()){
+            placesToBomb++;
+        }
+        //LEFT
+        if ((leftBottomCorner || leftTopCorner) && field[x - 1][y].getBomb()){
+            placesToBomb++;
+        }
+        //TOP GENERAL
+        if ((leftTopCorner || rightTopCorner) && field[x][y - 1].getBomb()){
+            placesToBomb++;
+        }
+        //TOP RIGHT CORNER
+        if (rightTopCorner && field[x + 1][y - 1].getBomb()){
+            placesToBomb++;
+        }
+        //TOP LEFT CORNER
+        if (leftTopCorner && field[x - 1][y - 1].getBomb()){
+            placesToBomb++;
+        }
+        //BOTTOM GENERAL
+        if ((rightBottomCorner || leftBottomCorner) && field[x][y + 1].getBomb()){
+            placesToBomb++;
+        }
+        //BOTTOM RIGHT CORNER
+        if (rightBottomCorner && field[x + 1][y + 1].getBomb()){
+            placesToBomb++;
+        }
+        //BOTTOM LEFT CORNER
+        if (leftBottomCorner && field[x - 1][y + 1].getBomb()){
+            placesToBomb++;
+        }
+
+        return placesToBomb;
     }
 
     /**
      * Checks if there is a bomb on the current position
-     *
-     * @param x X
+     */
+
+    /**
      * @param y Y
      * @return true if bomb on position
      */
     public boolean isBombOnPosition(int x, int y) {
-        return false;
+        return (field[x][y].getBomb());
+    }
+
+    public void createBombsField(int rows, int columns) {
+
+        Random rand = new Random();
+        int countDown = 0;
+        while (countDown != bombCount) {
+
+            int randRow = rand.nextInt(columns);
+            int randCol = rand.nextInt(rows);
+
+            while (field[randRow][randCol].getBomb()) {
+                randRow = rand.nextInt(columns);
+                randCol = rand.nextInt(rows);
+            }
+            field[randRow][randCol].setBomb(true);
+            countDown++;
+        }
     }
 
     /**
@@ -74,16 +205,17 @@ public class Minesweeper {
      * @return bomb count
      */
     public int getBombCount() {
-        return 0;
+        return bombCount;
     }
 
     /**
-     * total bombs - number of flags
+     * total bombs mínus number of flags
      *
      * @return remaining bomb count
      */
     public int getRemainingBombCount() {
-        return 0;
+        int endCount = bombCount - flags;
+        return endCount;
     }
 
     /**
@@ -92,7 +224,7 @@ public class Minesweeper {
      * @return if player won
      */
     public boolean didWin() {
-        return false;
+        return (place == 0);
     }
 
     /**
@@ -101,7 +233,7 @@ public class Minesweeper {
      * @return if player lost
      */
     public boolean didLoose() {
-        return false;
+        return click;
     }
 
     public int getRows() {
