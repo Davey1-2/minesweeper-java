@@ -10,7 +10,6 @@ public class Minesweeper {
     private int place;
     private boolean click;
     private final int bombCount;
-    private int flags;
 
 
     public Minesweeper(int rows, int columns) {
@@ -28,7 +27,6 @@ public class Minesweeper {
 
         createBombsField(rows, columns);
         place = (rows * columns) - bombCount;
-        flags = bombCount;
     }
 
 
@@ -62,7 +60,6 @@ public class Minesweeper {
         }
         else {
             field[x][y].setState(2);
-            flags--;
         }
     }
 
@@ -169,17 +166,7 @@ public class Minesweeper {
         return placesToBomb;
     }
 
-    /**
-     * Checks if there is a bomb on the current position
-     */
 
-    /**
-     * @param y Y
-     * @return true if bomb on position
-     */
-    public boolean isBombOnPosition(int x, int y) {
-        return (field[x][y].getBomb());
-    }
 
     public void createBombsField(int rows, int columns) {
 
@@ -199,24 +186,6 @@ public class Minesweeper {
         }
     }
 
-    /**
-     * Returns the amount of bombs on the field
-     *
-     * @return bomb count
-     */
-    public int getBombCount() {
-        return bombCount;
-    }
-
-    /**
-     * total bombs mínus number of flags
-     *
-     * @return remaining bomb count
-     */
-    public int getRemainingBombCount() {
-        int endCount = bombCount - flags;
-        return endCount;
-    }
 
     /**
      * returns true if every flag is on a bomb, else false
